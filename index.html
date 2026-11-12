@@ -69,10 +69,10 @@
                 </div>
 
                 <div class="binance-card p-4 rounded-xl border binance-border space-y-3">
-                    <h3 class="text-xs font-bold text-gray-400 border-b binance-border pb-2">النتيجة المالية النهائية</h3>
+                    <h3 class="text-xs font-bold text-gray-400 border-b binance-border pb-2">النتيجة المالية النهائية (للأهداف معاً)</h3>
                     
                     <div class="flex justify-between items-center">
-                        <span class="text-xs text-gray-300">الربح الصافي (بعد خصم الرسوم):</span>
+                        <span class="text-xs text-gray-300">الربح الصافي الإجمالي:</span>
                         <span id="netProfit" class="text-base font-bold text-green-400">+$2.70</span>
                     </div>
 
@@ -121,15 +121,23 @@
                     <input type="number" step="0.0001" id="entryPrice" value="1.2000" oninput="calculate()" class="w-full bg-black/50 border binance-border rounded-lg p-2 text-xs text-white focus:outline-none focus:border-yellow-500">
                 </div>
 
-                <!-- Targets -->
+                <!-- Targets with Individual Net Profit Display -->
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-[11px] text-gray-400 mb-1">الهدف الأول (TP1 - 50%):</label>
                         <input type="number" step="0.0001" id="tp1" value="1.2200" oninput="calculate()" class="w-full bg-black/50 border binance-border rounded-lg p-2 text-xs text-white focus:outline-none focus:border-yellow-500">
+                        <div class="mt-1 p-1.5 bg-black/30 rounded border binance-border flex justify-between items-center text-[10px]">
+                            <span class="text-gray-400">الصافي:</span>
+                            <span id="tp1Profit" class="font-bold text-green-400">+$1.35</span>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-[11px] text-gray-400 mb-1">الهدف الثاني (TP2 - 50%):</label>
                         <input type="number" step="0.0001" id="tp2" value="1.2400" oninput="calculate()" class="w-full bg-black/50 border binance-border rounded-lg p-2 text-xs text-white focus:outline-none focus:border-yellow-500">
+                        <div class="mt-1 p-1.5 bg-black/30 rounded border binance-border flex justify-between items-center text-[10px]">
+                            <span class="text-gray-400">الصافي:</span>
+                            <span id="tp2Profit" class="font-bold text-green-400">+$1.35</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -174,6 +182,7 @@
 
             let pnl1 = 0, pnl2 = 0;
             const halfNotional = notional / 2;
+            const halfFee = totalFees / 2;
 
             if (currentDirection === 'LONG') {
                 if (tp1 > 0) pnl1 = halfNotional * ((tp1 - entry) / entry);
@@ -182,6 +191,19 @@
                 if (tp1 > 0) pnl1 = halfNotional * ((entry - tp1) / entry);
                 if (tp2 > 0) pnl2 = halfNotional * ((entry - tp2) / entry);
             }
+
+            const netProfit1 = pnl1 - halfFee;
+            const netProfit2 = pnl2 - halfFee;
+
+            // Update TP1 Profit display
+            const tp1ProfitEl = document.getElementById('tp1Profit');
+            tp1ProfitEl.innerText = (netProfit1 >= 0 ? '+$' : '-$') + Math.abs(netProfit1).toFixed(2);
+            tp1ProfitEl.className = "font-bold " + (netProfit1 >= 0 ? "text-green-400" : "text-red-400");
+
+            // Update TP2 Profit display
+            const tp2ProfitEl = document.getElementById('tp2Profit');
+            tp2ProfitEl.innerText = (netProfit2 >= 0 ? '+$' : '-$') + Math.abs(netProfit2).toFixed(2);
+            tp2ProfitEl.className = "font-bold " + (netProfit2 >= 0 ? "text-green-400" : "text-red-400");
 
             const grossProfit = pnl1 + pnl2;
             const netProfit = grossProfit - totalFees;
@@ -215,7 +237,7 @@
             statusEl.innerText = "جاري قراءة الإشارة بواسطة الذكاء الاصطناعي...";
             statusEl.className = "text-xs font-semibold text-yellow-400 block";
 
-            // Regex Fallback Parsing (Direct local parser if API fails or text is raw)
+            // Regex Fallback Parsing
             try {
                 const dirMatch = rawSignal.match(/(SHORT|LONG)/i);
                 const entryMatch = rawSignal.match(/(?:دخول|Entry)[\s:]*([0-9.]+)/i);
